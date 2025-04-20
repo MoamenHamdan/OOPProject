@@ -70,8 +70,9 @@ public class Province  implements Serializable {
 	}
 
 	public boolean DeleteAnestheticLand(int idOfLand) {
-		if (searchLandById(idOfLand) >= -1) {
-			for (int i = searchLandById(idOfLand); i < numberOfAnestheticLands - 1; i++) {
+		int index = searchLandById(idOfLand);
+		if (index >= 0) {
+			for (int i = index; i < numberOfAnestheticLands - 1; i++) {
 				Land[i] = Land[i + 1];
 			}
 			Land[numberOfAnestheticLands - 1] = null;
@@ -83,7 +84,7 @@ public class Province  implements Serializable {
 
 	public int searchLandById(int idofland) {
 		for (int i = 0; i < numberOfAnestheticLands; i++) {
-			if (Land[i].idOfLand == idofland) {
+			if (Land[i] != null && Land[i].idOfLand == idofland) {
 				return i;
 			}
 		}
@@ -98,23 +99,23 @@ public class Province  implements Serializable {
 	}
 
 	public int FindNumberOfAgricultureLands() {
-//		int a = 0;
+		int count = 0;
 		for (int i = 0; i < numberOfAnestheticLands; i++) {
 			if (Land[i] instanceof Agriculture) {
-				agricultureCount++;
+				count++;
 			}
 		}
-		return agricultureCount;
+		return count;
 	}
 
 	public int FindNumberOfConstructionLands() {
-//		int c = 0;
+		int count = 0;
 		for (int i = 0; i < numberOfAnestheticLands; i++) {
 			if (Land[i] instanceof Construction) {
-				constructionCount++;
+				count++;
 			}
 		}
-		return constructionCount;
+		return count;
 	}
 
 	public boolean UpdateLandInformation(int idofland) {
@@ -167,100 +168,96 @@ public class Province  implements Serializable {
 		}
 		return false;
 	}
-	public void SaveData(String agriculture,String construction)throws IOException {
-	  
-		File fileAgriculture =new File(agriculture);
-		File fileConstruction =new File(construction);
-		fileAgriculture.createNewFile();
-		fileAgriculture.createNewFile();
-				ObjectOutputStream A = new ObjectOutputStream(new FileOutputStream(fileAgriculture));
-				
-		for(int i=0;i<numberOfAnestheticLands;i++) {
-			if(Land[i] instanceof Agriculture) {
-		        A.writeObject(Land[i]);
+	public void SaveData(String agriculture, String construction) throws IOException {
+		File fileAgriculture = new File(agriculture);
+		File fileConstruction = new File(construction);
+		
+		if (!fileAgriculture.exists()) {
+			fileAgriculture.createNewFile();
+		}
+		if (!fileConstruction.exists()) {
+			fileConstruction.createNewFile();
+		}
+
+		try (ObjectOutputStream A = new ObjectOutputStream(new FileOutputStream(fileAgriculture))) {
+			for (int i = 0; i < numberOfAnestheticLands; i++) {
+				if (Land[i] instanceof Agriculture) {
+					A.writeObject(Land[i]);
+				}
 			}
 		}
-		        A.close();
-		             
-		     ObjectOutputStream C = new ObjectOutputStream(new FileOutputStream(fileConstruction));
-		for(int i=0;i<numberOfAnestheticLands;i++) {
-			if(Land[i] instanceof Construction) {
-		        C.writeObject(Land[i]);
+
+		try (ObjectOutputStream C = new ObjectOutputStream(new FileOutputStream(fileConstruction))) {
+			for (int i = 0; i < numberOfAnestheticLands; i++) {
+				if (Land[i] instanceof Construction) {
+					C.writeObject(Land[i]);
+				}
 			}
 		}
-		        C.close();
+	}
 
-		     } 
-
-		public AnestheticLand[] TakeAgricultureinfoFromFile(String file)throws IOException, ClassNotFoundException{
-			 Agriculture[] A=new Agriculture[FindNumberOfAgricultureLands()];
-			FileInputStream FILE = new FileInputStream(file);
-		        ObjectInputStream OBJ = new ObjectInputStream(FILE);
-		        for(int i=0;i<FindNumberOfAgricultureLands();i++) {
-		        	 A[i]=(Agriculture)OBJ.readObject();
-		        }
-		        OBJ.close();
-		        FILE.close();
-			return A;
+	public AnestheticLand[] TakeAgricultureinfoFromFile(String file) throws IOException, ClassNotFoundException {
+		File fileObj = new File(file);
+		if (!fileObj.exists()) {
+			throw new FileNotFoundException("Agriculture file not found: " + file);
 		}
 		
-		public AnestheticLand[] TakeConstructioninfoFromFile(String file)throws ClassNotFoundException, IOException{
-			Construction[] C=new Construction[FindNumberOfConstructionLands()];
-			FileInputStream FILE = new FileInputStream(file);
-		        ObjectInputStream OBJ = new ObjectInputStream(FILE);
-		        for(int i=0;i<FindNumberOfConstructionLands();i++) {
-		        	 C[i]=(Construction)OBJ.readObject();
-		        }
-		        OBJ.close();
-		        FILE.close();
-			return C;
+		Agriculture[] A = new Agriculture[FindNumberOfAgricultureLands()];
+		try (FileInputStream FILE = new FileInputStream(file);
+			 ObjectInputStream OBJ = new ObjectInputStream(FILE)) {
+			for (int i = 0; i < FindNumberOfAgricultureLands(); i++) {
+				A[i] = (Agriculture) OBJ.readObject();
+			}
 		}
-		public double PriceOfAgricultureLandsById(String file,int id)throws ClassNotFoundException, IOException{
-			AnestheticLand[] A=new AnestheticLand[FindNumberOfAgricultureLands()];
-			A=TakeAgricultureinfoFromFile(file);
-			boolean aalam=false;
-			int index=0;
-			for(int i=0;i<FindNumberOfAgricultureLands();i++) {
-				
-				if(A[i].idOfLand==id) {
-					aalam=true;
-					index=i;
-					break;
-				}
-			}
-			if(aalam) {
-				return A[index].PriceOfOneMeter*A[index].area;
-			}
-			return 0;
-		}
-		public double PriceOfConstructionLandsById(String file,int id)throws ClassNotFoundException, IOException{
-			AnestheticLand[] A=new AnestheticLand[FindNumberOfConstructionLands()];
-			A=TakeConstructioninfoFromFile(file);
-			boolean aalam=false;
-			int index=0;
-			for(int i=0;i<FindNumberOfConstructionLands();i++) {
-				
-				if(A[i].idOfLand==id) {
-					aalam=true;
-					index=i;
-					break;
-				}
-			}
-			if(aalam) {
-				return A[index].PriceOfOneMeter*A[index].area;
-			}
-			return 0;
-		}
-		public double SecondMethodToFindPriceOfLandsById(int id){
-			int index=searchLandById(id);
-			if(index>-1) {
-				return 	(Land[index].getPriceOfOneMeter())*(Land[index].getArea());
-			}
-			return 0;
-		}
-	
-	
+		return A;
+	}
 
-	
+	public AnestheticLand[] TakeConstructioninfoFromFile(String file) throws ClassNotFoundException, IOException {
+		File fileObj = new File(file);
+		if (!fileObj.exists()) {
+			throw new FileNotFoundException("Construction file not found: " + file);
+		}
+		
+		Construction[] C = new Construction[FindNumberOfConstructionLands()];
+		try (FileInputStream FILE = new FileInputStream(file);
+			 ObjectInputStream OBJ = new ObjectInputStream(FILE)) {
+			for (int i = 0; i < FindNumberOfConstructionLands(); i++) {
+				C[i] = (Construction) OBJ.readObject();
+			}
+		}
+		return C;
+	}
+
+	public double PriceOfAgricultureLandsById(String file, int id) throws ClassNotFoundException, IOException {
+		AnestheticLand[] A = TakeAgricultureinfoFromFile(file);
+		for (int i = 0; i < A.length; i++) {
+			if (A[i] != null && A[i].idOfLand == id) {
+				return A[i].PriceOfOneMeter * A[i].area;
+			}
+		}
+		return 0;
+	}
+
+	public double PriceOfConstructionLandsById(String file, int id) throws ClassNotFoundException, IOException {
+		AnestheticLand[] A = TakeConstructioninfoFromFile(file);
+		for (int i = 0; i < A.length; i++) {
+			if (A[i] != null && A[i].idOfLand == id) {
+				return A[i].PriceOfOneMeter * A[i].area;
+			}
+		}
+		return 0;
+	}
+
+	public double SecondMethodToFindPriceOfLandsById(int id){
+		int index=searchLandById(id);
+		if(index>-1) {
+			return 	(Land[index].getPriceOfOneMeter())*(Land[index].getArea());
+		}
+		return 0;
+	}
+
+
+
+
 
 }
